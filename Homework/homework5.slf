@@ -1,0 +1,707 @@
+
+terminals fn unit in value stepsorvalue true false if then else iszero succ bool nat nvalue
+
+syntax
+
+e ::= fn x : tau => e[x]
+| x
+| e e
+| 0
+| succ e
+| iszero e
+| if e then e else e
+| true 
+| false 				
+
+tau ::= bool
+| nat
+| tau -> tau
+
+Gamma ::= *
+|   Gamma, x : tau
+
+judgment nvalue: e nvalue
+
+--------------- val-zero
+0 nvalue
+
+e nvalue
+--------------- val-succ
+(succ e) nvalue 
+
+judgment value: e value
+
+e nvalue
+--------------- val-nvalue
+e value
+
+--------------- val-true
+true value
+
+--------------- val-false
+false value
+
+--------------------------- val-fn
+fn x : tau => e1[x] value
+
+judgment reduce: e -> e
+
+e -> e'
+-------------------------- c-succ
+succ e -> succ e'
+
+e -> e'
+-------------------------- c-iszero
+iszero e -> iszero e'
+
+------------------- r-iszero-true
+iszero 0 -> true
+
+e nvalue
+------------------------- r-iszero-false
+iszero (succ e) -> false
+    
+
+------------------------------  r-if-true    
+if true then e1 else e2 -> e1
+
+------------------------------  r-if-false    
+if false then e1 else e2 -> e2
+
+e0 -> e0'
+-------------------------------------------------  c-if    
+if e0 then e1 else e2 -> if e0' then e1 else e2
+
+
+e1 -> e1'
+------------------- c-app-l
+e1 e2 -> e1' e2
+
+e1 value
+e2 -> e2'
+------------------- c-app-r
+(e1 e2) -> (e1 e2')			
+
+e2 value
+---------------------------------- r-app
+(fn x : tau => e[x]) e2 -> e[e2]
+
+
+
+judgment has-type: Gamma |- e : tau
+assumes Gamma
+
+-------------------------- t-zero
+Gamma |- 0: nat
+
+Gamma |- e: nat
+-------------------------- t-succ
+Gamma |- succ e: nat
+
+Gamma |- e: nat
+-------------------------- t-iszero
+Gamma |- iszero e: bool
+
+Gamma |- e0: bool
+Gamma |- e1: tau
+Gamma |- e2: tau
+------------------------------------ t-if
+Gamma |- if e0 then e1 else e2: tau
+
+-------------------------- t-true
+Gamma |- true: bool
+
+-------------------------- t-false
+Gamma |- false: bool
+
+------------------------- t-var
+Gamma, x:tau |- x : tau
+
+
+/** we can replace x with x1 because it's a bound variable */
+
+Gamma, x1:tau |- e[x1] : tau'
+--------------------------------------------- t-fn
+Gamma |- fn x : tau => e[x] : tau -> tau'
+
+
+Gamma |- e1 : tau' -> tau
+Gamma |- e2 : tau'
+---------------------------------- t-app
+Gamma |- e1 e2 : tau
+
+
+judgment stepsorvalue: e stepsorvalue
+
+e value
+--------------- stepsorvalue-value
+e stepsorvalue
+
+e -> e'
+--------------- stepsorvalue-steps
+e stepsorvalue
+
+
+/************************ PROGRESS **************************************/
+
+
+theorem progress : forall dt : * |- e : tau exists e stepsorvalue.
+
+
+dsv : e stepsorvalue by induction on dt :
+    case rule
+        -------------------------------- t-zero
+        _: * |- 0 : nat
+    is
+        dv: 0 nvalue by rule val-zero
+        dv1:0 value by rule val-nvalue on dv
+        proof by rule stepsorvalue-value on dv1
+    end case
+
+    case rule
+        dt1: * |- e0 : nat
+        -------------------------------- t-succ
+        _: * |- (succ e0) : nat
+    is
+        d: e0 stepsorvalue by induction hypothesis on dt1
+        proof by case analysis on d:
+            case rule
+                d1: e0 value
+                --------------------- stepsorvalue-value
+                _: e0 stepsorvalue
+            is
+                proof by case analysis on d1:
+                    case rule
+                        d2: e0 nvalue
+                        --------------------- val-nvalue
+                        _: e0 value
+                    is
+                        d3: succ e0 nvalue by rule val-succ on d2
+                        d4: succ e0 value by rule val-nvalue on d3
+                        proof by rule stepsorvalue-value on d4
+                    end case
+
+                    case rule
+                        --------------------- val-true
+                        _: true value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                    case rule
+                        --------------------- val-false
+                        _: false value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                    case rule
+                        --------------------------------- val-fn
+                        _: (fn x : tau0 => e1[x]) value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                    
+                end case analysis
+            end case
+
+            case rule
+                d1: e0 -> e1
+                --------------------- stepsorvalue-steps
+                _: e0 stepsorvalue
+            is
+                d2: succ e0 -> succ e1 by rule c-succ on d1
+                proof by rule stepsorvalue-steps on d2
+            end case
+
+            
+        end case analysis
+    end case
+
+    case rule
+        dt1: * |- e0 : nat
+        -------------------------------- t-iszero
+        _: * |- (iszero e0) : bool
+    is
+        d: e0 stepsorvalue by induction hypothesis on dt1
+        
+        proof by case analysis on d:
+            case rule
+                dv: e0 value
+                --------------------- stepsorvalue-value
+                _: e0 stepsorvalue
+            is
+                proof by case analysis on dv:
+                    case rule
+                        d1: e0 nvalue
+                        --------------------- val-nvalue
+                        _: e0 value
+                    is
+                        proof by case analysis on d1:
+                            case rule
+                                --------------------- val-zero
+                                d2: 0 nvalue
+                            is
+                                d3: iszero 0 -> true by rule r-iszero-true
+                                proof by rule stepsorvalue-steps on d3
+                            end case
+
+                            case rule
+                                d2: e1 nvalue
+                                --------------------- val-succ
+                                _: (succ e1) nvalue
+                            is
+                                d3: iszero (succ e1) -> false by rule r-iszero-false on d2
+                                proof by rule stepsorvalue-steps on d3
+                            end case
+
+                            
+                        end case analysis
+                    end case
+
+                    case rule
+                        --------------------- val-true
+                        _: true value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                    case rule
+                        --------------------- val-false
+                        _: false value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                    case rule
+                        --------------------------------- val-fn
+                        _: (fn x : tau0 => e1[x]) value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                end case analysis
+            end case
+
+            case rule
+                d1: e0 -> e1
+                --------------------- stepsorvalue-steps
+                _: e0 stepsorvalue
+            is
+                d2: iszero e0 -> iszero e1 by rule c-iszero on d1
+                proof by rule stepsorvalue-steps on d2
+            end case
+
+            
+        end case analysis
+    end case
+
+    case rule
+        dt1: * |- e0 : bool
+        _: * |- e1 : tau
+        _: * |- e2 : tau
+        ------------------------------------------ t-if
+        _: * |- (if e0 then e1 else e2) : tau
+    is
+        dv: e0 stepsorvalue by induction hypothesis on dt1
+        proof by case analysis on dv:
+            case rule
+                d1: e0 value
+                --------------------- stepsorvalue-value
+                _: e0 stepsorvalue
+            is
+                proof by case analysis on d1:
+                    case rule
+                        d2: e0 nvalue
+                        --------------------- val-nvalue
+                        _: e0 value
+                    is
+                        proof by case analysis on d2:
+                            case rule
+                                --------------------- val-zero
+                                _: 0 nvalue
+                            is
+                                proof by contradiction on dt1
+                            end case
+
+                            case rule
+                                _: e3 nvalue
+                                --------------------- val-succ
+                                _: (succ e3) nvalue
+                            is
+                                proof by contradiction on dt1
+                            end case
+
+                        end case analysis
+                    end case
+
+                    case rule
+                        --------------------- val-true
+                        _: true value
+                    is
+                        d2: if true then e1 else e2 -> e1 by rule r-if-true 
+                        proof by rule stepsorvalue-steps on d2
+                    end case
+
+                    case rule
+                        --------------------- val-false
+                        _: false value
+                    is
+                        d2: if false then e1 else e2 -> e2 by rule r-if-false
+                        proof by rule stepsorvalue-steps on d2
+                    end case
+
+                    case rule
+                        --------------------------------- val-fn
+                        _: (fn x : tau0 => e3[x]) value
+                    is
+                        proof by contradiction on dt1
+                    end case
+
+                
+                end case analysis
+            end case
+
+            case rule
+                d1: e0 -> e3
+                --------------------- stepsorvalue-steps
+                _: e0 stepsorvalue
+            is
+                d2: (if e0 then e1 else e2) -> (if e3 then e1 else e2) by rule c-if on d1
+                proof by rule stepsorvalue-steps on d2
+            end case
+
+            
+        end case analysis
+    end case
+
+    case rule
+        -------------------------------- t-true
+        _: * |- true : bool
+    is
+        d: true value by rule val-true
+        proof by rule stepsorvalue-value on d
+    end case
+
+    case rule
+        -------------------------------- t-false
+        _: * |- false : bool
+    is
+        d: false value by rule val-false
+        proof by rule stepsorvalue-value on d
+    end case
+
+
+
+    case rule
+
+	       dext: *, x:tau'' |- e'[x] : tau'
+	       ------------------------------------------------- t-fn
+	       dfnt: * |- fn x : tau'' => e'[x] : tau'' -> tau'
+
+    is
+
+	       dv : fn x : tau'' => e'[x] value by rule val-fn
+	       dsv : fn x : tau'' => e'[x] stepsorvalue by rule stepsorvalue-value on dv
+
+    end case
+
+    case rule
+
+	       dp1t: (*) |- e1 : tau' -> tau
+	       dp2t: (*) |- e2 : tau'
+	       ---------------------------------- t-app
+	       dappt: (*) |- (e1 e2) : tau
+
+    is
+ 
+	       dp1sv: e1 stepsorvalue by induction hypothesis on dp1t
+	       dp2sv: e2 stepsorvalue by induction hypothesis on dp2t
+	
+	       dsv : e stepsorvalue by case analysis on dp1sv :
+
+	           case rule
+
+		              dp1v : e1 value
+		              ---------------------- stepsorvalue-value
+		              dp1sv' : e1 stepsorvalue
+
+	           is
+	
+		              dsv : e stepsorvalue by case analysis on dp2sv :
+	
+		                  case rule
+		
+			                     dp2v : e2 value
+			                     ---------------------- stepsorvalue-value
+			                     dp2sv' : e2 stepsorvalue
+		
+		                  is
+		
+			                     dsv : e stepsorvalue by case analysis on dp1t :
+			                         case rule
+			                             _: * |- e0 : bool
+			                             _: * |- e3 : (tau' -> tau)
+			                             _: * |- e4 : (tau' -> tau)
+			                             ------------------------------------------ t-if
+			                             _: * |- (if e0 then e3 else e4) : (tau' -> tau)
+			                         is
+			                             proof by case analysis on dp1v:
+			                                 case rule
+			                                     d4: (if e0 then e3 else e4) nvalue
+			                                     --------------------- val-nvalue
+			                                     _: (if e0 then e3 else e4) value
+			                                 is
+			                                     proof by contradiction on d4
+			                                 end case
+                                         end case analysis
+			                         end case
+
+			
+			                         case rule
+			
+				                            dpp1t' : *, x:tau' |- e1'[x] : tau
+				                            ---------------------------------------------------- t-fn
+				                            dp1t' : * |- fn x : tau' => e1'[x] : tau' -> tau
+			
+			                         is
+			
+				                            ds : (fn x : tau' => e1'[x]) e2 -> e1'[e2] by rule r-app on dp2v
+				                            dsv : e stepsorvalue by rule stepsorvalue-steps on ds
+				
+			                         end case
+			
+			                         case rule
+			
+				                            dp1t1' : (*) |- e11 : tau'' -> (tau' -> tau)
+				                            dp1t2' : (*) |- e12 : tau''
+				                            --------------------------------------------- t-app
+				                            tp1t' : (*) |- e11 e12 : tau' -> tau
+			
+			                         is
+				                            proof by case analysis on dp1v:
+				                                case rule
+				                                    d4: (e11 e12) nvalue
+				                                    --------------------- val-nvalue
+				                                    _: (e11 e12) value
+				                                is
+				                                    proof by contradiction on d4
+				                                end case
+				                            end case analysis
+								
+			                         end case
+			
+			                         // other cases don't unify with conclusion
+			
+			                     end case analysis
+
+		                  end case
+		
+		                  case rule
+		
+			                     dp2s : e2 -> e2'
+			                     ---------------- stepsorvalue-steps
+			                     dp2sv' :  e2 stepsorvalue
+		
+		                  is
+		
+			                     ds : e1 e2 -> e1 e2' by rule c-app-r on dp1v, dp2s
+			                     dsv : e1 e2 stepsorvalue by rule stepsorvalue-steps on ds
+		
+		                  end case
+		              end case analysis
+	           end case
+	
+	           case rule
+	
+		              dp1s : e1 -> e1'
+		              -------------------------- stepsorvalue-steps
+		              dp1sv' :  e1 stepsorvalue
+	
+	           is
+	
+		              ds : e1 e2 -> e1' e2 by rule c-app-l on dp1s
+		              dsv : e1 e2 stepsorvalue by rule stepsorvalue-steps on ds
+	
+	           end case
+	       end case analysis
+    end case
+end induction
+end theorem
+
+
+/************************ PRESERVATION **************************************/
+
+
+theorem preservation: forall dt: * |- e : tau forall ds: e -> e' exists * |- e' : tau.
+
+dt' : * |- e' : tau by induction on ds:
+    case rule
+        d1: e0 -> e1
+        -------------------------------- c-succ
+        d2: (succ e0) -> (succ e1)
+    is
+       proof by case analysis on  |- succ e0: tau:
+           case rule
+               _: e0 -> e1
+               -------------------------------- c-succ
+               _: (succ e0) -> (succ e1)
+           is
+               proof by unproved
+           end case
+
+       
+       end case analysis
+    end case
+
+    case rule
+        d1: e0 -> e1
+        -------------------------------- c-iszero
+        _: (iszero e0) -> (iszero e1)
+    is
+        
+        proof by unproved
+    end case
+
+    case rule
+        ------------------------- r-iszero-true
+        _: (iszero 0) -> true
+    is
+        proof by unproved
+    end case
+
+    case rule
+        _: e0 nvalue
+        ------------------------------- r-iszero-false
+        _: (iszero (succ e0)) -> false
+    is
+        proof by unproved
+    end case
+
+    case rule
+        ------------------------------------ r-if-true
+        _: (if true then e' else e0) -> e'
+    is
+        proof by unproved
+    end case
+
+    case rule
+        ------------------------------------ r-if-false
+        _: (if false then e0 else e') -> e'
+    is
+        proof by unproved
+    end case
+
+    case rule
+        _: e0 -> e1
+        ------------------------------------------------------- c-if
+        _: (if e0 then e2 else e3) -> (if e1 then e2 else e3)
+    is
+        proof by unproved
+    end case
+
+
+    case rule
+
+	       d1 : e1 -> e1'
+	       ----------------------- c-app-l
+	       d2 : e1 e2 -> e1' e2
+
+    is
+
+	       dt' : * |- e' : tau by case analysis on dt :
+	
+	           case rule
+	
+		              d3 : * |- e1 : tau' -> tau
+		              d4 : * |- e2 : tau'
+		              ---------------------------------- t-app
+		              d5 : * |- (e1 e2) : tau
+	
+	           is
+	
+		              d6 : * |- e1' : tau' -> tau by induction hypothesis on d3, d1
+		              dt' : * |- e1' e2 : tau by rule t-app on d6, d4
+	
+	           end case
+	           // other cases do not unify with form of e = (e1 e2)
+	       end case analysis
+
+    end case
+
+    case rule
+
+	       d1 : e1 value
+	       d2 : e2 -> e2'
+	       ----------------------- c-app-r
+	       d3 : e1 e2 -> e1 e2'
+
+    is
+
+	       dt' : * |- e' : tau by case analysis on dt :
+
+	           case rule
+	
+		              d4 : * |- e1 : tau' -> tau
+		              d5 : * |- e2 : tau'
+		              ---------------------------------- t-app
+		              d6 : * |- e1 e2 : tau
+	
+	           is
+	
+		              d7 : * |- e2' : tau' by induction hypothesis on d5, d2
+		              dt' : * |- e1 e2' : tau by rule t-app on d4, d7
+	
+	           end case
+	           // other cases do not unify with form of e = (e1 e2)
+	       end case analysis
+
+    end case
+
+    case rule
+
+	       d1 : e2 value
+	       ------------------------------------------- r-app
+	       d2 : (fn x : tau' => e1[x]) e2 -> e1[e2]
+
+    is
+
+	       dt' : * |- e' : tau by case analysis on dt :
+
+	           case rule
+
+		              d4 : * |- fn x : tau' => e1[x] : tau'' -> tau
+		              d5 : * |- e2 : tau''
+		              ---------------------------------------------------------- t-app
+		              d6 : * |- (fn x : tau' => e1[x]) e2 : tau
+	
+	           is
+	
+		              dt' : * |- e' : tau by case analysis on d4 :
+	
+		                  case rule
+		
+			                     d7: *, x:tau' |- e1[x] : tau
+			                     ------------------------------------------------- t-fn
+			                     d8: * |- fn x : tau' => e1[x] : tau' -> tau
+		
+		                  is
+		
+			                     /** Substitution preserves typing!  No lemma to prove.
+			                     */
+			
+			                     d9: * |- e1[e2] : tau by substitution on d7, d5
+		
+		                  end case
+		                  // other cases do not unify with fn expression
+		              end case analysis
+	
+	           end case
+	           // other cases do not unify with form of e = (e1 e2)
+	       end case analysis
+
+    end case
+end induction
+end theorem
+

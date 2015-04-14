@@ -1,0 +1,94 @@
+package edu.uwm.cs.cs732.spring15;
+
+terminals if then else true false z s
+
+syntax
+
+t ::= true
+   |  false
+   |  if t then t else t
+
+n ::= z
+   |  s n
+
+judgment equal: t = t
+
+------------------ eq-true
+true = true
+
+------------------ eq-false
+false = false
+
+t0 = t0'
+t1 = t1'
+t2 = t2'
+------------------------------------------------ eq-if
+if t0 then t1 else t2 = if t0' then t1' else t2' 
+
+
+judgment greater: n > n
+
+-------------- gt-one
+s n > n
+
+n1 > n2
+-------------- gt-more
+s n1 > n2
+
+
+theorem greater-than-zero: 
+forall n
+exists (s n) > z.
+
+proof by induction on n:
+
+end induction
+end theorem
+
+theorem transitive:
+forall d1: n1 > n2
+forall d2: n2 > n3
+exists n1 > n3.
+
+proof by induction on d1:
+
+end induction
+end theorem
+
+theorem greater-succ:
+forall d1: s n1 > s n2
+exists n1 > n2.
+
+proof by induction on d1:
+
+end induction
+end theorem
+
+judgment absurd: contradiction
+
+theorem reflexive:
+   forall n
+   forall d1: n > n
+   exists contradiction.
+
+proof by induction on n:
+
+end induction
+end theorem
+
+theorem if-then-else-1:
+forall d1: if t0 then t1 else t2 = if t0' then t1' else t2'
+exists t0 = t0'.
+
+proof by induction on d1:
+
+end induction
+end theorem
+
+theorem if-then-else-2:
+forall d0: t0=t0'
+forall d1: t1=t1'
+forall d2: t2=t2'
+exists if t0 then t1 else t2 = if t0' then t1' else t2'.
+
+end theorem

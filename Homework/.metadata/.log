@@ -1,0 +1,12 @@
+!SESSION 2015-04-14 15:54:55.888 -----------------------------------------------
+eclipse.buildId=M20120914-1800
+java.version=1.6.0_65
+java.vendor=Apple Inc.
+BootLoader constants: OS=macosx, ARCH=x86_64, WS=cocoa, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.java.product -product org.eclipse.epp.package.java.product -keyring /Users/ejohane/.eclipse_keyring -showlocation
+Command-line arguments:  -os macosx -ws cocoa -arch x86_64 -product org.eclipse.epp.package.java.product -data /Users/ejohane/Dropbox/School/Spring2015/Sasylf/Homework -product org.eclipse.epp.package.java.product -keyring /Users/ejohane/.eclipse_keyring -showlocation
+
+!ENTRY org.eclipse.ui 2 0 2015-04-14 15:55:00.146
+!MESSAGE Warnings while parsing the key bindings from the 'org.eclipse.ui.commands' extension point
+!SUBENTRY 1 org.eclipse.ui 2 0 2015-04-14 15:55:00.146
+!MESSAGE Cannot bind to an undefined command: plug-in='org.sasylf', id='org.eclipse.pde.runtime.spy.commands.menuSpyCommand'

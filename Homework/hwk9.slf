@@ -1,0 +1,179 @@
+terminals fn unit in value stepsorvalue top fvalue atype nvalue ntype
+
+syntax
+ 
+e ::= fn x : tau => e[x]
+ | x
+ | e e
+ | "(" ")" 				
+
+ 
+tau ::= unit
+ | top
+ | tau -> tau
+ 
+Gamma ::= *
+      |   Gamma, x : tau
+ 
+
+judgment value: e value
+
+--------------- val-unit
+"(" ")" value
+
+--------------------------- val-fn
+fn x : tau => e1[x] value
+
+ 
+
+judgment reduce: e -> e
+
+e1 -> e1'
+------------------- c-app-l
+e1 e2 -> e1' e2
+
+e1 value
+e2 -> e2'
+------------------- c-app-r
+(e1 e2) -> (e1 e2')			 
+
+e2 value
+---------------------------------- r-app
+(fn x : tau => e[x]) e2 -> e[e2]
+
+ 
+
+judgment has-type: Gamma |- e : tau
+assumes Gamma
+
+
+-------------------------- t-unit
+Gamma |- "("")" : unit
+ 
+
+------------------------- t-var
+Gamma, x:tau |- x : tau
+
+ 
+Gamma, x1:tau |- e[x1] : tau'
+--------------------------------------------- t-fn
+Gamma |- fn x : tau => e[x] : tau -> tau'
+
+
+Gamma |- e1 : tau' -> tau
+Gamma |- e2 : tau'
+---------------------------------- t-app
+Gamma |- e1 e2 : tau
+
+
+Gamma |- e : tau
+tau <: tau'
+------------------ t-sub
+Gamma |- e : tau'
+
+ 
+judgment subtype: tau <: tau
+
+
+------------ s-top
+tau <: top 
+
+
+------------ s-refl
+tau <: tau
+
+tau1 <: tau2
+tau2 <: tau3
+------------- s-tran
+tau1 <: tau3
+
+
+tau1' <: tau1
+tau2  <: tau2'
+------------------------------- s-arrow
+tau1 -> tau2 <: tau1' -> tau2'
+
+
+
+judgment stepsorvalue: e stepsorvalue
+
+e value
+--------------- stepsorvalue-value
+e stepsorvalue
+
+e -> e'
+--------------- stepsorvalue-steps
+e stepsorvalue
+
+
+judgment fun-value: e fvalue
+
+---------------------------- fv-fn
+(fn x: tau => e[x]) fvalue 
+
+judgment unit-value: e nvalue
+
+---------------------------- nv-unit
+("(" ")") nvalue
+
+
+judgment arrow-type: tau <: tau atype
+
+tau1' <: tau1
+tau2 <: tau2'
+------------------------------------------- at-arrow
+(tau1 -> tau2) <: (tau1' -> tau2') atype
+
+judgment unit-type : tau ntype
+
+----------------- nt-unit
+unit ntype
+ 
+theorem unit-type : forall da: tau <: unit exists tau ntype.
+	proof by induction on da:
+    
+	end induction
+end theorem
+
+theorem arrow-type : forall da: tau <: tau1 -> tau2 exists tau <: (tau1->tau2) atype.
+	proof by induction on da:
+    
+	end induction
+end theorem
+
+
+theorem canonical-unit : forall da : * |- e : unit forall dv: e value exists e nvalue .
+        proof by induction on da:
+     
+        end induction
+end theorem
+
+theorem canonical-fn : forall da : * |- e : tau1->tau2 forall dv: e value  exists e fvalue.
+    proof by induction on da:
+
+    end induction
+end theorem
+
+ 
+theorem progress : forall dt : * |- e : tau exists e stepsorvalue.
+	proof by induction on dt :
+    
+	end induction
+end theorem
+
+ 
+theorem substitute: forall dt: * |- fn x : tau => e[x] : tau1 -> tau2 exists tau1 <: tau and *, x: tau |- e[x] : tau2.
+	proof by induction on dt:
+
+	end induction                   
+end theorem
+ 
+
+theorem preservation: forall dt: * |- e : tau forall ds: e -> e' exists * |- e' : tau.
+	proof by induction on dt:
+ 
+	end induction
+end theorem
+
+ 
+
